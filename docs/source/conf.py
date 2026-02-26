@@ -10,7 +10,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
+import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
@@ -70,7 +70,10 @@ templates_path = ["_templates"]
 
 # Ignore links that do not work with github actions link checking
 # https://github.com/neuroinformatics-unit/actions/pull/24#issue-1978966182
-linkcheck_anchors_ignore_for_url = ["https://neuroinformatics.zulipchat.com/"]
+linkcheck_anchors_ignore_for_url = [
+    "https://neuroinformatics.zulipchat.com/",
+    "https://cocodataset.org/",
+]
 linkcheck_ignore = [
     "https://opensource.org",
     "https://www.incf.org/recommendations-gsoc-contributors",
@@ -82,8 +85,15 @@ linkcheck_ignore = [
     "https://chatgpt.com/",
     r"https://www\.cell\.com/.*",  # Use regex pattern to match all cell.com URLs
     r"https?://(?:dx\.)?doi\.org/.*",  # Use regex pattern to match all DOI URLs
+    "https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14460",
+    "https://onlinelibrary.wiley.com/doi/full/10.1111/eth.12739",  # trajR
+    "https://github.com/SuperElastix/elastix/releases/download/5.2.0/elastix-5.2.0-manual.pdf",
 ]
-
+linkcheck_request_headers = {
+    "https://github.com": {
+        "Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN', '')}",
+    },
+}
 # Suppress strikethrough warnings - strikethrough is only supported in HTML
 suppress_warnings = ['myst.strikethrough']
 
@@ -174,8 +184,7 @@ html_theme_options = {
     "analytics": {
         "google_analytics_id": "G-6260TGM7TY",
     },
-    "announcement": "Learn more about our tools at the <a href='https://neuroinformatics.dev/open-software-summer-school/index.html'>Neuroinformatics Unit Open Software Summer School</a> in London, August 2026!",
-
+     "announcement": "Would you like a paid internship with the NIU this summer? We're taking part in <a href='https://neuroinformatics.dev/get-involved/gsoc/index.html'>Google Summer of Code</a>!",
 }
 
 html_sidebars = {
