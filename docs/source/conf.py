@@ -251,7 +251,7 @@ html_context = {
 
 
 # ---------------------------------------------------------------------------
-# Custom page navigation override
+# Custom next / previous page navigation
 # ---------------------------------------------------------------------------
 # By default, Sphinx automatically determines the "Next" and "Previous" page
 # buttons based on the order pages appear in each toctree.  This behaviour can
@@ -281,12 +281,81 @@ html_context = {
 #   prev_page_title: "About us"
 #   ---
 #
+# Example – remove the "Next" button entirely on a page:
+#
+#   ---
+#   next_page: ""
+#   ---
+#
 # Notes:
 #   • Docnames must NOT include the file extension (use 'about', not 'about.md').
 #   • Paths are relative to the docs/source root
 #     (e.g., 'get-involved/index', 'blog/index').
 #   • To remove the Next or Previous button entirely, set the value to an
 #     empty string: ``next_page: ""``
+#
+# ---------------------------------------------------------------------------
+# How to change the navigation flow – step-by-step guide
+# ---------------------------------------------------------------------------
+#
+# The navigation flow is the sequence in which "Next ▶" and "◀ Previous"
+# buttons take the reader from page to page.  There are three ways to change
+# it, ranging from simplest to most powerful:
+#
+# ── Option A: Override links on individual pages (no Python changes needed) ──
+#
+#   This is the recommended approach for one-off adjustments.  Open the
+#   Markdown source of any page and add (or edit) its YAML front-matter block.
+#
+#   Step 1.  Identify the *docname* of the page you want to link to.
+#            A docname is the path from docs/source/ to the file, without its
+#            extension.  For example:
+#              docs/source/about.md          → docname: "about"
+#              docs/source/get-involved/index.md → docname: "get-involved/index"
+#
+#   Step 2.  Open the Markdown file whose buttons you want to change.
+#
+#   Step 3.  Add or edit the front-matter at the very top of the file:
+#
+#              ---
+#              next_page: <target-docname>        # required
+#              next_page_title: "Custom label"    # optional
+#              prev_page: <target-docname>        # required
+#              prev_page_title: "Custom label"    # optional
+#              ---
+#
+#            Omit a key to leave the corresponding button unchanged.
+#            Set a key to "" (empty string) to hide the button entirely.
+#
+#   Step 4.  Rebuild the docs:  make -C docs html
+#            The buttons on that page will now point to your chosen targets.
+#
+# ── Option B: Change the default toctree order (affects ALL pages) ──
+#
+#   If you want to change the default sequence for a whole section, edit the
+#   toctree directives in the relevant index.rst / index.md files.  Sphinx
+#   will automatically derive next/prev from the new order.  Pages that carry
+#   explicit front-matter overrides (Option A) still take precedence.
+#
+# ── Option C: Modify this Python callback (advanced) ──
+#
+#   You can change the Python code in _override_next_prev_page() itself to
+#   implement custom logic that front-matter alone cannot express.  Common
+#   extension points:
+#
+#   • Add new front-matter keys  – mirror the existing "next_page" / "prev_page"
+#     pattern: read a new key from `metadata`, compute the desired value, and
+#     write it into `context`.
+#
+#   • Apply site-wide rules  – move logic outside the per-page `if` guards to
+#     apply transformations to every page unconditionally.
+#
+#   • Derive targets programmatically  – instead of reading a static docname
+#     from metadata, call any Python code (look up a database, parse a config
+#     file, inspect env.toctree_includes, …) and write the result into context.
+#
+#   After any Python change, rebuild the docs to see the effect.
+#
 # ---------------------------------------------------------------------------
 
 def _override_next_prev_page(app, pagename, templatename, context, doctree):
@@ -343,36 +412,83 @@ def _override_next_prev_page(app, pagename, templatename, context, doctree):
        ``next_page_title`` / ``prev_page_title`` front-matter key or, when
        that is absent, looked up from ``env.titles``, and the result is
        written into *context* as a dict that the HTML template understands.
+
+    *Changing the flow – what to modify and where:*
+
+    - **To redirect one page's button**: add ``next_page`` / ``prev_page``
+      front-matter to the relevant ``.md`` file and rebuild.  No Python
+      change is needed.
+    - **To support a new front-matter key**: copy either ``if "next_page"``
+      block, rename the key, and write the result into a new ``context``
+      entry that your template reads.
+    - **To apply a rule to every page**: add unconditional logic before or
+      after the existing ``if`` guards; *context* is always available and
+      can be read or overwritten freely.
+    - **To derive targets programmatically**: replace the
+      ``metadata["next_page"]`` lookup with any Python expression
+      (e.g., a dict mapping pagenames to targets, a call to
+      ``env.toctree_includes``, etc.) and write the result into *context*.
     """
+    # ── Shared setup ──────────────────────────────────────────────────────────
+    # `env` is the Sphinx build environment; it holds metadata, titles, and
+    # the full document graph for every page in the project.
     env = app.builder.env
+
+    # `metadata` is a plain dict populated from the YAML front-matter block
+    # (the `--- ... ---` header) of the current Markdown page.  If the page
+    # has no front-matter, or the page is not a Markdown file, this is {}.
     metadata = env.metadata.get(pagename, {})
 
-    # Override the "next" navigation link if 'next_page' metadata is set.
+    # ── Next-page override ────────────────────────────────────────────────────
+    # Only act when the page author has explicitly set `next_page` in the
+    # front-matter.  If the key is absent we leave Sphinx's default alone.
     if "next_page" in metadata:
+        # The value is the *docname* of the desired target page, e.g. "about"
+        # or "get-involved/index".  An empty string is the author's signal
+        # that the Next button should be hidden on this page.
         next_docname = metadata["next_page"]
+
         if next_docname == "":
-            # An empty string means "remove the Next button".
+            # Setting context["next"] to None tells the HTML template to omit
+            # the "Next ▶" button entirely for this page.
             context["next"] = None
         else:
+            # ── Resolve the button label ──────────────────────────────────────
+            # Prefer an explicit title from the author; fall back to the
+            # target page's own H1 heading as recorded in env.titles.
             next_title = metadata.get("next_page_title", "")
             if not next_title and next_docname in env.titles:
+                # env.titles[docname] is a docutils Text node; .astext()
+                # converts it to a plain Python string.
                 next_title = env.titles[next_docname].astext()
+
+            # ── Write the override into the template context ──────────────────
+            # get_relative_uri(from, to) computes the relative URL path from
+            # the current page to the target page, e.g. "../about/".  This
+            # is necessary because HTML pages can live at different directory
+            # depths and the template must emit a correct href attribute.
             context["next"] = {
                 "link": app.builder.get_relative_uri(pagename, next_docname),
                 "title": next_title,
+                # "subtitle" is shown below the title in some themes; we
+                # leave it empty because front-matter does not supply one.
                 "subtitle": "",
             }
 
-    # Override the "prev" navigation link if 'prev_page' metadata is set.
+    # ── Previous-page override ────────────────────────────────────────────────
+    # Identical logic to the next-page block above, applied to the "◀ Prev"
+    # button.  See the comments there for a full line-by-line explanation.
     if "prev_page" in metadata:
         prev_docname = metadata["prev_page"]
+
         if prev_docname == "":
-            # An empty string means "remove the Previous button".
+            # Hide the "◀ Previous" button on this page.
             context["prev"] = None
         else:
             prev_title = metadata.get("prev_page_title", "")
             if not prev_title and prev_docname in env.titles:
                 prev_title = env.titles[prev_docname].astext()
+
             context["prev"] = {
                 "link": app.builder.get_relative_uri(pagename, prev_docname),
                 "title": prev_title,
