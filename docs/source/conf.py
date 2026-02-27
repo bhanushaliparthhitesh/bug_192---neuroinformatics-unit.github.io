@@ -292,9 +292,57 @@ html_context = {
 def _override_next_prev_page(app, pagename, templatename, context, doctree):
     """Override auto-generated next/prev nav links using per-page front-matter.
 
-    Reads ``next_page`` and ``prev_page`` (and their optional ``_title``
-    variants) from the page's YAML front-matter metadata and, when present,
-    replaces the navigation context that Sphinx passes to the HTML template.
+    Sphinx fires the ``html-page-context`` event once for every page it
+    renders.  This callback intercepts that event and, when the current page
+    carries ``next_page`` or ``prev_page`` keys in its YAML front-matter,
+    replaces the auto-generated navigation links that Sphinx would otherwise
+    derive from the toctree order.
+
+    Parameters
+    ----------
+    app : sphinx.application.Sphinx
+        The running Sphinx application instance.  Used to access the build
+        environment (``app.builder.env``) and to resolve relative URIs
+        between pages (``app.builder.get_relative_uri``).
+    pagename : str
+        The docname of the page currently being rendered (e.g. ``"about"``
+        or ``"get-involved/index"``), relative to ``docs/source/`` and
+        without a file extension.
+    templatename : str
+        The Jinja2 template file being used to render this page (e.g.
+        ``"page.html"``).  Not used by this function but required by the
+        Sphinx event signature.
+    context : dict
+        The template rendering context that Sphinx will pass to Jinja2.
+        This function mutates ``context["next"]`` and/or ``context["prev"]``
+        in-place when front-matter overrides are found.  Each value is
+        either ``None`` (suppress the button) or a dict with the keys
+        ``"link"``, ``"title"``, and ``"subtitle"``.
+    doctree : docutils.nodes.document or None
+        The parsed doctree for the page.  Not used by this function but
+        required by the Sphinx event signature.
+
+    Returns
+    -------
+    None
+        The function modifies *context* in-place; it does not return a value.
+
+    Notes
+    -----
+    *How it works, step by step:*
+
+    1. ``env.metadata[pagename]`` is consulted for ``next_page`` /
+       ``prev_page`` keys written as YAML front-matter in the ``.md`` source.
+    2. If a key is absent the corresponding nav link is left unchanged
+       (Sphinx's default toctree-derived link is used).
+    3. If the key is present but its value is an **empty string** the
+       navigation button is suppressed by setting ``context["next"]`` or
+       ``context["prev"]`` to ``None``.
+    4. Otherwise the docname is resolved to a relative URL with
+       ``get_relative_uri``, the title is taken from the optional
+       ``next_page_title`` / ``prev_page_title`` front-matter key or, when
+       that is absent, looked up from ``env.titles``, and the result is
+       written into *context* as a dict that the HTML template understands.
     """
     env = app.builder.env
     metadata = env.metadata.get(pagename, {})
