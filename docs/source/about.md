@@ -1,3 +1,12 @@
+---
+# Example: manually override the next navigation page.
+# Instead of the auto-generated "Next → people" (from toctree order),
+# the "Next" button on this page will point to "projects".
+# Remove or change this front-matter to restore the default behaviour.
+next_page: projects
+next_page_title: "Projects"
+---
+
 # About us
 
 The Neuroinformatics Unit (NIU) is dedicated to advancing neuroscience research through the development of innovative software and computational tools. We work together to create user-friendly and efficient software for data analysis and management, modelling, and visualization. Our goal is to empower scientists with the tools they need to gain new insights into the complexities of the nervous system and to facilitate collaboration among researchers in the field.
