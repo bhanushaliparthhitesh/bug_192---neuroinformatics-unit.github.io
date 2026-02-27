@@ -11,14 +11,12 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
 
 
 # -- Project information -----------------------------------------------------
 
 project = "neuroinformatics-unit homepage"
-copyright = "2022, Neuroinformatics Unit"
+copyright = "2022–2026, Neuroinformatics Unit"
 author = "Neuroinformatics Unit"
 
 # The full version, including alpha/beta/rc tags
@@ -135,7 +133,7 @@ html_css_files = [
 
 html_favicon = "_static/logo_light.png"
 
-# Cutomize the theme
+# Customize the theme
 html_theme_options = {
     "icon_links": [
         {
