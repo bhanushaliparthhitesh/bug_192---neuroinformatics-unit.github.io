@@ -1,3 +1,8 @@
+---
+prev_page: index
+prev_page_title: "Home"
+---
+
 # Projects
 A summary of some of the Neuroinformatics Unit projects.
 

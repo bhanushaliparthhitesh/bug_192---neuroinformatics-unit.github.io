@@ -1,3 +1,8 @@
+---
+next_page: projects
+next_page_title: "Projects"
+---
+
 (target-home)=
 # Neuroinformatics Unit
 
