@@ -298,61 +298,84 @@ html_context = {
 # Worked example – tracing the full flow end-to-end
 # ---------------------------------------------------------------------------
 #
-# Suppose the site has three pages in this toctree order:
+# The site's toctree order is:
 #
-#   index  →  about  →  projects
+#   index  →  about  →  people  →  projects  →  publications  →  …
 #
-# By default Sphinx gives "about" these buttons:
-#   ◀ Previous : index
-#   Next ▶     : projects
+# By default Sphinx gives "index" a "Next ▶ About us" button.
 #
-# Goal: make "about" skip directly to "get-involved/index" for Next, and
-#       keep "◀ Previous" pointing at "index".
+# Goal: make the "index" page jump straight to "projects" for Next, and
+#       make the "projects" page return straight to "index" for Previous.
+#       (The "about" and "people" pages keep their default buttons.)
 #
-# Step 1 – add front-matter to docs/source/about.md:
+# Step 1 – add front-matter to docs/source/index.md:
 #
 #   ---
-#   next_page: get-involved/index
-#   next_page_title: "Get Involved"
+#   next_page: projects
+#   next_page_title: "Projects"
 #   ---
 #
-# Step 2 – Sphinx reads the file and stores this in env.metadata:
+# Step 2 – add front-matter to docs/source/projects.md:
 #
-#   env.metadata["about"] == {
-#       "next_page": "get-involved/index",
-#       "next_page_title": "Get Involved",
-#   }
+#   ---
+#   prev_page: index
+#   prev_page_title: "Home"
+#   ---
 #
-# Step 3 – when Sphinx renders "about", it fires html-page-context and
-#           calls _override_next_prev_page(app, "about", ..., context, ...):
+# Step 3 – Sphinx reads both files and stores their metadata:
 #
-#   metadata = env.metadata.get("about", {})
-#   # metadata == {"next_page": "get-involved/index",
-#   #              "next_page_title": "Get Involved"}
+#   env.metadata["index"]    == {"next_page": "projects",
+#                                "next_page_title": "Projects"}
+#   env.metadata["projects"] == {"prev_page": "index",
+#                                "prev_page_title": "Home"}
+#
+# Step 4 – when Sphinx renders "index", it fires html-page-context and
+#           calls _override_next_prev_page(app, "index", ..., context, ...):
+#
+#   metadata = env.metadata.get("index", {})
+#   # metadata == {"next_page": "projects", "next_page_title": "Projects"}
 #
 #   if "next_page" in metadata:          # True – key is present
-#       next_docname = "get-involved/index"
+#       next_docname = "projects"
 #
 #       if next_docname == "":           # False – not suppressing
 #           ...
 #       else:
-#           next_title = "Get Involved"  # from next_page_title
-#           # env.titles lookup is skipped because next_title is non-empty
+#           next_title = "Projects"      # from next_page_title
 #
 #           context["next"] = {
-#               "link": "../get-involved/index/",   # relative URL
-#               "title": "Get Involved",
+#               "link": "projects/",     # relative URL to projects page
+#               "title": "Projects",
 #               "subtitle": "",
 #           }
 #
 #   if "prev_page" in metadata:          # False – key absent; Sphinx default
-#       ...                              # kept (still points to "index")
+#       ...                              # (index has no Previous button anyway)
 #
-# Step 4 – the Jinja2 template reads context["next"] and renders:
+# Step 5 – when Sphinx renders "projects", the same callback fires:
 #
-#   <a href="../get-involved/index/">Next ▶ Get Involved</a>
+#   metadata = env.metadata.get("projects", {})
+#   # metadata == {"prev_page": "index", "prev_page_title": "Home"}
 #
-# The "◀ Previous" button is unchanged because prev_page was not set.
+#   if "next_page" in metadata:          # False – no override; default kept
+#       ...
+#
+#   if "prev_page" in metadata:          # True
+#       prev_docname = "index"
+#       prev_title   = "Home"
+#
+#       context["prev"] = {
+#           "link": "../",               # relative URL back to index
+#           "title": "Home",
+#           "subtitle": "",
+#       }
+#
+# Step 6 – the Jinja2 template reads the context and renders:
+#
+#   On index:    <a href="projects/">Next ▶ Projects</a>
+#   On projects: <a href="../">◀ Previous Home</a>
+#
+# The "about" and "people" pages are untouched and use Sphinx defaults.
 #
 # ---------------------------------------------------------------------------
 # How to change the navigation flow – step-by-step guide
