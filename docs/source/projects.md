@@ -1,3 +1,14 @@
+---
+# Example: manually override the previous navigation page.
+# Without this front-matter the "Previous" button here would point to
+# "people" (the toctree order).  With it the button skips "people" and
+# returns directly to "about", completing the bidirectional flow change
+# started in about.md.
+# Remove or change this front-matter to restore the default behaviour.
+prev_page: about
+prev_page_title: "About us"
+---
+
 # Projects
 A summary of some of the Neuroinformatics Unit projects.
 

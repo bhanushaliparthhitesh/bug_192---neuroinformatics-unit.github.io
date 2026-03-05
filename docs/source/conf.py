@@ -417,6 +417,109 @@ html_context = {
 #   After any Python change, rebuild the docs to see the effect.
 #
 # ---------------------------------------------------------------------------
+# Worked example – tracing a real bidirectional flow change
+# ---------------------------------------------------------------------------
+#
+# This section traces exactly what happens when the two overrides currently
+# present in about.md and projects.md are processed by the build.
+#
+# ── The default toctree chain (no front-matter) ──────────────────────────────
+#
+#   about  →  people  →  projects  →  publications  →  …
+#
+#   Sphinx derives this order from the toctree in index.md.  Every page's
+#   "Next ▶" button leads to the page listed immediately after it in that
+#   toctree, and every "◀ Previous" button leads to the page listed before it.
+#
+# ── What the overrides do ─────────────────────────────────────────────────────
+#
+#   about.md front-matter:
+#     next_page: projects
+#     next_page_title: "Projects"
+#
+#   projects.md front-matter:
+#     prev_page: about
+#     prev_page_title: "About us"
+#
+#   Resulting navigation:
+#
+#     ◀  About  ──Next──▶  Projects  ──Next──▶  Publications  …
+#                           ◀──Prev──  About
+#
+#   The "people" page is now bypassed in both directions: the reader can
+#   still reach it via the sidebar, but the Next/Prev buttons skip it.
+#
+# ── Step-by-step trace through the Python code ───────────────────────────────
+#
+#   When Sphinx renders about.html it fires the html-page-context event.
+#   _override_next_prev_page is called with pagename="about".
+#
+#   1.  env.metadata.get("about", {})
+#         → {"next_page": "projects", "next_page_title": "Projects"}
+#
+#   2.  "next_page" is found in metadata  →  enter the if-block.
+#
+#   3.  next_docname = "projects"  (not empty, so the else-branch runs)
+#
+#   4.  next_title = metadata.get("next_page_title", "")
+#         → "Projects"  (author supplied an explicit label)
+#
+#   5.  context["next"] = {
+#           "link":     get_relative_uri("about", "projects")
+#                         → a relative URL such as "projects/" or "projects.html"
+#                           (exact format depends on the builder configuration),
+#           "title":    "Projects",
+#           "subtitle": "",
+#       }
+#       The template now renders: Next ▶ Projects
+#
+#   The "prev_page" key is absent from about.md, so context["prev"] is
+#   left as the toctree default (nothing before "about").
+#
+#   ---
+#
+#   When Sphinx renders projects.html (pagename="projects"):
+#
+#   1.  env.metadata.get("projects", {})
+#         → {"prev_page": "about", "prev_page_title": "About us"}
+#
+#   2.  "prev_page" is found  →  enter the if-block.
+#
+#   3.  prev_docname = "about"  (not empty)
+#
+#   4.  prev_title = "About us"  (explicit label)
+#
+#   5.  context["prev"] = {
+#           "link":     get_relative_uri("projects", "about")
+#                         → a relative URL such as "../about/" or "../about.html"
+#                           (exact format depends on the builder configuration),
+#           "title":    "About us",
+#           "subtitle": "",
+#       }
+#       The template now renders: ◀ About us
+#
+#   context["next"] is left at the toctree default
+#   (publications, the page after projects).
+#
+# ── How to reproduce / adapt this for your own pages ─────────────────────────
+#
+#   1.  Decide the new chain, e.g.  about → projects → people → publications
+#
+#   2.  In about.md add:
+#         next_page: projects
+#
+#   3.  In projects.md add:
+#         next_page: people
+#         prev_page: about
+#
+#   4.  In people.md add:
+#         next_page: publications
+#         prev_page: projects
+#
+#   5.  Run:  make -C docs html
+#       The buttons reflect the new chain immediately.
+#
+# ---------------------------------------------------------------------------
 
 def _override_next_prev_page(app, pagename, templatename, context, doctree):
     """Override auto-generated next/prev nav links using per-page front-matter.
