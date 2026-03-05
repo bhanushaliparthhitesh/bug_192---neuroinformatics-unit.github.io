@@ -440,11 +440,13 @@ html_context = {
 #   After any Python change, rebuild the docs to see the effect.
 #
 # ---------------------------------------------------------------------------
-# Worked example – tracing a real bidirectional flow change
+# Worked example – hypothetical bidirectional flow change
 # ---------------------------------------------------------------------------
 #
-# This section traces exactly what happens when the two overrides currently
-# present in about.md and projects.md are processed by the build.
+# This section shows what would happen if about.md and projects.md had
+# the following front-matter overrides (this is a hypothetical example
+# to illustrate the mechanism; see the "Worked example – tracing the full
+# flow end-to-end" section above for the overrides that are active in the site).
 #
 # ── The default toctree chain (no front-matter) ──────────────────────────────
 #
@@ -454,13 +456,13 @@ html_context = {
 #   "Next ▶" button leads to the page listed immediately after it in that
 #   toctree, and every "◀ Previous" button leads to the page listed before it.
 #
-# ── What the overrides do ─────────────────────────────────────────────────────
+# ── What the overrides would do ──────────────────────────────────────────────
 #
-#   about.md front-matter:
+#   about.md front-matter (hypothetical):
 #     next_page: projects
 #     next_page_title: "Projects"
 #
-#   projects.md front-matter:
+#   projects.md front-matter (hypothetical):
 #     prev_page: about
 #     prev_page_title: "About us"
 #
