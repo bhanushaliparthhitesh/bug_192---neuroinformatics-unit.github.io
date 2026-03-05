@@ -295,6 +295,66 @@ html_context = {
 #     empty string: ``next_page: ""``
 #
 # ---------------------------------------------------------------------------
+# Worked example – tracing the full flow end-to-end
+# ---------------------------------------------------------------------------
+#
+# Suppose the site has three pages in this toctree order:
+#
+#   index  →  about  →  projects
+#
+# By default Sphinx gives "about" these buttons:
+#   ◀ Previous : index
+#   Next ▶     : projects
+#
+# Goal: make "about" skip directly to "get-involved/index" for Next, and
+#       keep "◀ Previous" pointing at "index".
+#
+# Step 1 – add front-matter to docs/source/about.md:
+#
+#   ---
+#   next_page: get-involved/index
+#   next_page_title: "Get Involved"
+#   ---
+#
+# Step 2 – Sphinx reads the file and stores this in env.metadata:
+#
+#   env.metadata["about"] == {
+#       "next_page": "get-involved/index",
+#       "next_page_title": "Get Involved",
+#   }
+#
+# Step 3 – when Sphinx renders "about", it fires html-page-context and
+#           calls _override_next_prev_page(app, "about", ..., context, ...):
+#
+#   metadata = env.metadata.get("about", {})
+#   # metadata == {"next_page": "get-involved/index",
+#   #              "next_page_title": "Get Involved"}
+#
+#   if "next_page" in metadata:          # True – key is present
+#       next_docname = "get-involved/index"
+#
+#       if next_docname == "":           # False – not suppressing
+#           ...
+#       else:
+#           next_title = "Get Involved"  # from next_page_title
+#           # env.titles lookup is skipped because next_title is non-empty
+#
+#           context["next"] = {
+#               "link": "../get-involved/index/",   # relative URL
+#               "title": "Get Involved",
+#               "subtitle": "",
+#           }
+#
+#   if "prev_page" in metadata:          # False – key absent; Sphinx default
+#       ...                              # kept (still points to "index")
+#
+# Step 4 – the Jinja2 template reads context["next"] and renders:
+#
+#   <a href="../get-involved/index/">Next ▶ Get Involved</a>
+#
+# The "◀ Previous" button is unchanged because prev_page was not set.
+#
+# ---------------------------------------------------------------------------
 # How to change the navigation flow – step-by-step guide
 # ---------------------------------------------------------------------------
 #
