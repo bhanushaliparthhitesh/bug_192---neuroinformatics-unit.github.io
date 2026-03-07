@@ -1,4 +1,8 @@
-:html_theme.sidebar_primary.remove:
+---
+prev_page: index
+prev_page_title: "Home"
+html_theme.sidebar_primary.remove: ""
+---
 
 # People
 

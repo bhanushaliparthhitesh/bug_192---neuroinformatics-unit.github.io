@@ -1,6 +1,6 @@
 ---
-prev_page: index
-prev_page_title: "Home"
+prev_page: people
+prev_page_title: "People"
 ---
 
 # Projects
