@@ -1,6 +1,6 @@
 ---
-next_page: projects
-next_page_title: "Projects"
+next_page: people
+next_page_title: "People"
 ---
 
 (target-home)=
